@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Family Game Night Check-In</title>
+    <style>
+      :root {
+        --bg: #121212;
+        --card: #1e1e1e;
+        --accent: #d4a373;
+        --text: #f1f1f1;
+        --muted: #b0b0b0;
+        --border: #2f2f2f;
+        --filled: #3a6f3a;
+      }
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, sans-serif;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+      header h1 {
+        font-size: 1.6rem;
+        margin-bottom: 0.2rem;
+      }
+      header p {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      /* Navigation */
+      .nav {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 0.8rem;
+        overflow-x: auto;
+      }
+      .nav button {
+        flex: 1;
+        background: var(--card);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 0.6rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .nav button.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* Controls */
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .controls button {
+        background: transparent;
+        color: var(--muted);
+        border: 1px dashed var(--border);
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .controls button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .progress-bar {
+        height: 10px;
+        background: var(--border);
+        border-radius: 5px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 10px;
+        width: 0%;
+        background: var(--accent);
+        transition: width 0.3s;
+        border-radius: 5px;
+      }
+
+      /* Pages */
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+
+      /* Accordion */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+      }
+      .card button {
+        width: 100%;
+        background: none;
+        border: none;
+        color: var(--text);
+        padding: 1rem;
+        font-size: 1rem;
+        text-align: left;
+        cursor: pointer;
+      }
+      .card-content {
+        display: none;
+        padding: 1rem;
+        border-top: 1px solid var(--border);
+      }
+      .card.open .card-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      /* Answer box */
+      textarea {
+        width: 100%;
+        min-height: 80px;
+        background: #181818;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.5rem;
+        font-size: 0.95rem;
+        resize: vertical;
+        transition: border 0.3s;
+      }
+      textarea.filled {
+        border-color: var(--filled);
+      }
+
+      /* Summary */
+      .summary {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .summary-row {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.8rem;
+      }
+      .summary-row h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--accent);
+      }
+      .summary-row p {
+        margin: 0.2rem 0 0 0;
+      }
+
+      /* QR */
+      .qr-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .qr-section input {
+        padding: 0.4rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: #181818;
+        color: var(--text);
+      }
+      .qr-section button {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: none;
+        color: var(--text);
+        cursor: pointer;
+      }
+      .qr-section #qrcodeContainer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      /* Footer */
+      footer {
+        margin-top: 2rem;
+        text-align: center;
+        color: var(--muted);
+        font-style: italic;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Family Game Night Check-In</h1>
+        <p>
+          Generate QR → Families fill answers → Host sees summary & alignment
+        </p>
+      </header>
+
+      <div class="qr-section">
+        <label>Number of families/participants:</label>
+        <input type="number" id="numFamilies" min="1" value="3" />
+        <button onclick="generateQRs()">Generate QR Codes</button>
+        <div id="qrcodeContainer"></div>
+      </div>
+
+      <div class="nav">
+        <button onclick="showPage(0)" class="active">Round 1</button>
+        <button onclick="showPage(1)">Round 2</button>
+        <button onclick="showPage(2)">Round 3</button>
+        <button onclick="showPage(3)">Round 4</button>
+        <button onclick="showPage(4)">Summary</button>
+      </div>
+
+      <div class="controls">
+        <button onclick="resetSession()">Start New Session</button>
+        <button onclick="togglePrivacy()">Lock / Privacy Mode</button>
+        <button onclick="showAlignment()">Show Alignment Meter</button>
+        <button onclick="exportPDF()">Export Group PDF</button>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress"></div>
+        </div>
+      </div>
+
+      <div class="page active" id="round1"></div>
+      <div class="page" id="round2"></div>
+      <div class="page" id="round3"></div>
+      <div class="page" id="round4"></div>
+
+      <div class="page" id="summaryPage">
+        <h3>Group Summary</h3>
+        <div class="summary" id="summaryContent"></div>
+      </div>
+
+      <footer>“One thing we appreciate after this session…”</footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+      // Questions
+      const questions = [
+        [
+          "1. What helps everyone feel heard?",
+          "2. What do you need after disagreement?",
+          "3. What makes you feel closest?",
+        ],
+        [
+          "4. What does physical intimacy mean?",
+          "5. Changes in romantic life?",
+          "6. Feeling supported when work is demanding?",
+        ],
+        [
+          "7. What financial system feels fair?",
+          "8. What responsibility feels unfair?",
+          "9. What does partnership mean daily?",
+        ],
+        [
+          "10. What do you hope never to lose?",
+          "11. What would make relationships stronger this year?",
+        ],
+      ];
+
+      const rounds = ["round1", "round2", "round3", "round4"];
+      const containerIds = rounds.map((id) => document.getElementById(id));
+
+      // Build questions
+      containerIds.forEach((div, i) => {
+        questions[i].forEach((q, j) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `<button onclick="toggle(this)">${q}</button>
+      <div class="card-content">
+        <textarea data-key="q${i}-${j}"></textarea>
+      </div>`;
+          div.appendChild(card);
+        });
+      });
+
+      // Accordion
+      function toggle(btn) {
+        btn.parentElement.classList.toggle("open");
+      }
+
+      // Pages
+      function showPage(index) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p, i) => p.classList.toggle("active", i === index));
+        document
+          .querySelectorAll(".nav button")
+          .forEach((b, i) => b.classList.toggle("active", i === index));
+        if (index === 4) populateSummary();
+        updateProgress();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Session Key
+      function sessionKey() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("session") || "default_";
+      }
+
+      // Load / Save answers
+      const textareas = document.querySelectorAll("textarea");
+      textareas.forEach((area) => {
+        const key = sessionKey() + area.dataset.key;
+        area.value = localStorage.getItem(key) || "";
+        updateTextareaStyle(area);
+        area.addEventListener("input", () => {
+          localStorage.setItem(key, area.value);
+          updateProgress();
+          updateTextareaStyle(area);
+        });
+      });
+
+      // Style filled
+      function updateTextareaStyle(area) {
+        if (area.value.trim() !== "") area.classList.add("filled");
+        else area.classList.remove("filled");
+      }
+
+      // Reset
+      function resetSession() {
+        if (confirm("Start a new session? This will clear saved answers.")) {
+          textareas.forEach((area) => {
+            localStorage.removeItem(sessionKey() + area.dataset.key);
+            area.value = "";
+            updateTextareaStyle(area);
+          });
+          updateProgress();
+        }
+      }
+
+      // Privacy
+      let privacy = false;
+      function togglePrivacy() {
+        privacy = !privacy;
+        textareas.forEach((area) => {
+          area.style.color = privacy ? "transparent" : "";
+          area.style.backgroundColor = privacy ? "#1e1e1e" : "";
+        });
+      }
+
+      // Progress
+      function updateProgress() {
+        let filled = 0;
+        textareas.forEach((t) => {
+          if (t.value.trim() !== "") filled++;
+        });
+        const percent = Math.round((filled / textareas.length) * 100);
+        document.getElementById("progress").style.width = percent + "%";
+      }
+      updateProgress();
+
+      // Populate group summary
+      function populateSummary() {
+        const summary = document.getElementById("summaryContent");
+        summary.innerHTML = "";
+        const allKeys = Object.keys(localStorage);
+        const groupKeys = allKeys.filter((k) => k.includes("q"));
+        const sessions = [...new Set(groupKeys.map((k) => k.split("q")[0]))];
+        sessions.forEach((session) => {
+          const h = document.createElement("h4");
+          h.style.color = "#d4a373";
+          h.innerText = "Session: " + session.replace("_", "");
+          summary.appendChild(h);
+          for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < questions[i].length; j++) {
+              const key = session + "q" + i + "-" + j;
+              const val = localStorage.getItem(key) || "(empty)";
+              const row = document.createElement("div");
+              row.className = "summary-row";
+              row.innerHTML = `<h4>${questions[i][j]}</h4><p>${val}</p>`;
+              summary.appendChild(row);
+            }
+          }
+        });
+      }
+
+      // PDF export
+      async function exportPDF() {
+        populateSummary();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text(
+          "Group Family Check-In Summary",
+          105,
+          15,
+          null,
+          null,
+          "center"
+        );
+        doc.setFontSize(11);
+        let y = 25;
+        const rows = document.querySelectorAll(
+          "#summaryContent .summary-row, #summaryContent h4"
+        );
+        rows.forEach((r) => {
+          const text = r.innerText;
+          if (text) {
+            doc.text(text, 10, y);
+            y += 6;
+            if (y > 280) {
+              doc.addPage();
+              y = 20;
+            }
+          }
+        });
+        doc.save("Group_CheckIn_Summary.pdf");
+      }
+
+      // Generate QR codes
+      function generateQRs() {
+        const num = parseInt(document.getElementById("numFamilies").value);
+        const container = document.getElementById("qrcodeContainer");
+        container.innerHTML = "";
+        for (let i = 1; i <= num; i++) {
+          const div = document.createElement("div");
+          div.style.marginBottom = "1rem";
+          const id = "FAM" + i + "_" + Date.now().toString(36);
+          const url =
+            window.location.origin +
+            window.location.pathname +
+            "?session=" +
+            id;
+          div.innerHTML = `<strong>Family ${i}</strong><br>`;
+          container.appendChild(div);
+          new QRCode(div, { text: url, width: 150, height: 150 });
+        }
+      }
+
+      // =================== Matching / Score Meter ===================
+      function calculateScores() {
+        const allKeys = Object.keys(localStorage);
+        const groupKeys = allKeys.filter((k) => k.includes("q"));
+        const sessions = [...new Set(groupKeys.map((k) => k.split("q")[0]))];
+
+        const scores = [];
+
+        for (let i = 0; i < 4; i++) {
+          for (let j = 0; j < questions[i].length; j++) {
+            const answers = [];
+            sessions.forEach((session) => {
+              const val = localStorage.getItem(session + "q" + i + "-" + j);
+              if (val) answers.push(val.toLowerCase());
+            });
+
+            let score = 0;
+            if (answers.length > 1) {
+              const wordsArray = answers.map((a) =>
+                a.split(/\W+/).filter(Boolean)
+              );
+              const firstWords = new Set(wordsArray[0]);
+              let matches = 0;
+              for (let k = 1; k < wordsArray.length; k++) {
+                wordsArray[k].forEach((w) => {
+                  if (firstWords.has(w)) matches++;
+                });
+              }
+              score = Math.round((matches / answers.length) * 10);
+            }
+            scores.push({
+              question: questions[i][j],
+              score: Math.min(score, 10),
+            });
+          }
+        }
+        return scores;
+      }
+
+      function showAlignment() {
+        populateSummary();
+        const summary = document.getElementById("summaryContent");
+        const scores = calculateScores();
+        const meterDiv = document.createElement("div");
+        meterDiv.style.marginTop = "1rem";
+        meterDiv.innerHTML =
+          "<h3 style='color:#d4a373'>Alignment / Fun Score Meter</h3>";
+        scores.forEach((s) => {
+          const div = document.createElement("div");
+          div.style.margin = "0.4rem 0";
+          div.innerHTML = `<strong>${s.question}</strong>
+      <div style="background:#2f2f2f;border-radius:5px;height:12px;margin-top:2px;overflow:hidden">
+        <div style="width:${
+          s.score * 10
+        }%;background:#3a6f3a;height:12px;"></div>
+      </div>
+      <small style="color:#b0b0b0">${s.score}/10 alignment</small>`;
+          meterDiv.appendChild(div);
+        });
+        summary.appendChild(meterDiv);
+      }
+    </script>
+  </body>
+</html>
